@@ -1,3 +1,4 @@
+import time
 from enum import Enum
 from threading import Lock
 
@@ -144,3 +145,5 @@ while True:
 
     print("State: %s, Keurig Level: %0.2f, Source Level %0.2f, Flow: %0.3f" %
           (pump_state.state.name, keurig_level, source_level, flow))
+
+    time.sleep(1.0)
