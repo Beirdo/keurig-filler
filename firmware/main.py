@@ -111,7 +111,7 @@ adcs = [ADC(i) for i in range(3)]
 
 # These will need calibrating
 level_sensor_min = 2000
-level_sensor_max = 5000
+level_sensor_max = 4095
 flow_factor = 1.0 / 740
 
 # We want this in % level on the sensor
@@ -126,7 +126,9 @@ while True:
 
     flow = counter * flow_factor
 
-    readings = [adc.read_u16() for adc in adcs]
+    # MicroPython has some stupid method of expanding to 16 bit values which is not linear.  We will use the
+    # original 12bit ADC readings, thanks.
+    readings = [adc.read_u16() >> 4 for adc in adcs]
     keurig_level = scale(readings[0] - readings[2], level_sensor_min, level_sensor_max, level_sensor_scale)
     source_level = scale(readings[1] - readings[2], level_sensor_min, level_sensor_max, level_sensor_scale)
 
