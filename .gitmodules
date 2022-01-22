@@ -1,3 +1,9 @@
 [submodule "common/github/KiCad-RP-Pico"]
 	path = common/github/KiCad-RP-Pico
 	url = https://github.com/ncarandini/KiCad-RP-Pico.git
+[submodule "firmware/externam/eeprom"]
+	path = firmware/externam/eeprom
+	url = https://github.com/Beirdo/micropython_eeprom.git
+[submodule "firmware/external/lcd"]
+	path = firmware/external/lcd
+	url = https://github.com/Beirdo/RPI-PICO-I2C-LCD.git
