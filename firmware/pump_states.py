@@ -77,7 +77,7 @@ class StateMachine(object):
 
     def _from_pump_to_stop(self) -> PumpStates:
         global pump_en
-        pump_en.value(0)
+        pump_en.off()
         self.end_time = time.time()
         on_time = self.end_time - self.start_time
         _log("Pump was on for %0.3fs" % on_time)
@@ -90,6 +90,6 @@ class StateMachine(object):
     def _from_idle_to_pump(self) -> PumpStates:
         global pump_en
         self.start_time = time.time()
-        pump_en.value(1)
+        pump_en.on()
         return PumpStates().PUMP
 

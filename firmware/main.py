@@ -3,7 +3,7 @@ import math
 import os
 import time
 
-from machine import Pin, ADC, SPI, I2C, UART
+from machine import Pin, ADC, SPI, I2C, UART, Signal
 
 from eeprom.fram.fram_spi import FRAM
 from fram_data import FRAMSettings
@@ -196,7 +196,10 @@ if not v2_detect:
     lcd = None
 else:
     # Hookup the HC-05 on UART0
-    uart_key = Pin(14, Pin.OPEN_DRAIN, value=1)
+    uart_key_pin = Pin(14, Pin.OPEN_DRAIN, value=1)
+    uart_key = Signal(uart_key_pin, invert=True)
+    uart_key.off()
+    
     uart = UART(0, baudrate=115200, rx=Pin(13), tx=Pin(12))
     add_log_file(uart)
 
@@ -220,7 +223,8 @@ else:
     # i2c.scan()
     lcd = LCDHandler(i2c, 0x27)
 
-pump_en = Pin(22, Pin.OUT, value=0)
+pump_pin = Pin(22, Pin.OUT, value=0)
+pump_en = Signal(pump_pin, invert=False)
 
 flow_count = 0
 
