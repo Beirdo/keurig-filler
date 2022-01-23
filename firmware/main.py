@@ -199,7 +199,7 @@ else:
     uart_key_pin = Pin(14, Pin.OPEN_DRAIN, value=1)
     uart_key = Signal(uart_key_pin, invert=True)
     uart_key.off()
-    
+
     uart = UART(0, baudrate=115200, rx=Pin(13), tx=Pin(12))
     add_log_file(uart)
 
@@ -297,5 +297,6 @@ while True:
             "pump_on_seconds": int(pump_on_seconds),
         })
         update_lcd_display(lcd)
+        fram_settings.write()
 
     time.sleep(1.0)
