@@ -1,3 +1,6 @@
 /firmware/micropython/
-
-firmware/.idea/
+/firmware/.idea/
+*~
+*.swp
+*.sch-bak
+*.kicad_pcb-bak

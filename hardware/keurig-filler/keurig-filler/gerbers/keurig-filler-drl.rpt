@@ -1,0 +1,28 @@
+Drill report for D:\kraken\keurig-filler\hardware\keurig-filler\keurig-filler\keurig-filler.kicad_pcb
+Created on 1/22/2022 10:11:51 PM
+
+Copper Layer Stackup:
+    =============================================================
+    L1 :  F.Cu                      front
+    L2 :  B.Cu                      back
+
+
+Drill file 'keurig-filler-PTH.drl' contains
+    plated through holes:
+    =============================================================
+    T1  0.40mm  0.016"  (43 holes)
+    T2  1.00mm  0.039"  (20 holes)
+    T3  1.02mm  0.040"  (43 holes)
+    T4  1.20mm  0.047"  (4 holes)
+    T5  1.32mm  0.052"  (7 holes)
+
+    Total plated holes count 117
+
+
+Drill file 'keurig-filler-NPTH.drl' contains
+    unplated through holes:
+    =============================================================
+    T1  1.50mm  0.059"  (2 holes)
+    T2  1.80mm  0.071"  (2 holes)
+
+    Total unplated holes count 4

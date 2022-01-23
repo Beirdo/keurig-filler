@@ -1213,4 +1213,15 @@ Wire Wire Line
 	5440 2190 5440 2690
 NoConn ~ 5310 2590
 NoConn ~ 5310 3290
+$Comp
+L Graphic:Logo_Open_Hardware_Large #LOGO1
+U 1 1 61EDAA38
+P 6350 7170
+F 0 "#LOGO1" H 6350 7670 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Large" H 6350 6770 50  0001 C CNN
+F 2 "" H 6350 7170 50  0001 C CNN
+F 3 "~" H 6350 7170 50  0001 C CNN
+	1    6350 7170
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
