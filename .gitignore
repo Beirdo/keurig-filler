@@ -4,3 +4,4 @@
 *.swp
 *.sch-bak
 *.kicad_pcb-bak
+/hardware/keurig-filler/gerbers/gerbers.zip
