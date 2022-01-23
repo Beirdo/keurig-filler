@@ -1,48 +1,40 @@
+from cbor import cbor
+from utils import _log
 
 
-class FRAMContents(object):
-    mapping = {
-        2: [
-            {
-                "version": {
-                    "address": 0,
-                    "size": 1,
-                    "type": int,
-                    "default": 2,
-                },
-            },
-            {
-                "liters_pumped": {
-                    "address": 1,
-                    "size": 4,
-                    "type": int,
-                    "default": 0,
-                },
-            },
-            {
-                "pump_on_seconds": {
-                    "address": 5,
-                    "size": 4,
-                    "type": int,
-                    "default": 0,
-                },
-            },
-        ],
-    }
-
-    def __init__(self, fram, version):
-        self.fram = fram
+class FRAMSettings(object):
+    def __init__(self, filename, version):
+        self.filename = filename
         self.version = version
-        self.data = {}
+        self.data = {"version": version}
+        self._dirty = True
+        self.read()
 
     def read(self):
-        pass
+        try:
+            with open(self.filename, "rb") as f:
+                self.data = cbor.load(f)
+                self._dirty = False
+        except Exception as e:
+            _log("ERROR, cannot read CBOR from FRAM: %s" % e)
+            self.data = {"version": self.version}
+            self._dirty = True
 
-    def write(self):
-        pass
+    def write(self, force=False):
+        if force or self._dirty:
+            try:
+                with open(self.filename, "wb") as f:
+                    cbor.dump(self.data, f, sort_keys=True)
+                    self._dirty = False
+            except Exception as e:
+                _log("ERROR, cannot write CBOR to FRAM: %s" % e)
 
     def get(self, key, default=None):
-        pass
+        return self.data.get(key, default)
 
     def set(self, key, value):
-        pass
+        oldvalue = self.get(key, None)
+        if oldvalue is not None and oldvalue == value:
+            return
+        self.data[key] = value
+        self._dirty = True

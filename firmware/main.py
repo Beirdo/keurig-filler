@@ -1,9 +1,13 @@
 import _thread
 import math
+import os
 import time
 
 from machine import Pin, ADC, SPI, I2C, UART
 
+from eeprom.fram.fram_spi import FRAM
+from fram_data import FRAMSettings
+from lcd_handler import LCDHandler
 from pump_states import StateMachine, PumpStates
 from utils import _log, add_log_file
 
@@ -21,7 +25,6 @@ Timer Handler:
     4) Update pump control state-machine
     5) Send update out UART (over USB)
 """
-
 
 scale_a = math.log(2.053)
 scale_b = math.log(0.9989)
@@ -109,11 +112,88 @@ def pulse_irq(pin):
         flow_count += 1
 
 
+keurig_level = 0.0
+source_level = 0.0
+pump_on_seconds = 0.0
+liters_pumped = 0.0
+
+display_vars = {
+    "keurig_level": 0.0,
+    "source_level": 0.0,
+    "liters_pumped": 0,
+    "pump_on_seconds": 0,
+}
+
+display_items = [
+    {
+        "x": 0,
+        "y": 0,
+        "static": "Keurig:",
+    },
+    {
+        "x": 7,
+        "y": 0,
+        "format": "%03.1%%",
+        "variable": "keurig_level",
+        "clear_to_eol": True,
+    },
+    {
+        "x": 0,
+        "y": 1,
+        "static": "Source:",
+    },
+    {
+        "x": 7,
+        "y": 1,
+        "format": "%03.1%%",
+        "variable": "source_level",
+        "clear_to_eol": True,
+    },
+    {
+        "x": 0,
+        "y": 2,
+        "static": "Pumped:",
+    },
+    {
+        "x": 7,
+        "y": 2,
+        "format": "%12dL",
+        "variable": "liters_pumped",
+        "clear_to_eol": True,
+    },
+    {
+        "x": 0,
+        "y": 3,
+        "static": "Time:",
+    },
+    {
+        "x": 7,
+        "y": 4,
+        "format": "%12ds",
+        "variable": "pump_on_seconds",
+        "clear_to_eol": True,
+    },
+]
+
+
+def update_lcd_display(lcd: LCDHandler):
+    for item in display_items:
+        if "static" in item:
+            str_ = item.get("static", "")
+        else:
+            value = display_vars.get(item.get("variable", None), 0)
+            str_ = item.get("format", "") % value
+        lcd.put_str(str_, item.get("x", -1), item.get("y", -1), item.get("clear_to_eol", False))
+    lcd.refresh()
+
+
 flow_mutex = _thread.allocate_lock()
 
 v2_detect = Pin(28, Pin.IN, Pin.PULL_UP).value()
 if not v2_detect:
     version = 1
+    fram_settings = None
+    lcd = None
 else:
     # Hookup the HC-05 on UART0
     uart_key = Pin(14, Pin.OPEN_DRAIN, value=1)
@@ -121,13 +201,24 @@ else:
     add_log_file(uart)
 
     # Hook up the FRAM on SPI0
-    spi = SPI(0, baudrate=10000000, polarity=0, phase=0, sck=Pin(18), mosi=Pin(19), miso=Pin(16))
-    spi_cs0 = Pin(17, Pin.OUT)
-    spi_cs0.value(1)
+    supported_version = 2
+    spi = SPI(0, baudrate=25_000_000, polarity=0, phase=0, sck=Pin(18), mosi=Pin(19), miso=Pin(16))
+    spi_cs0 = Pin(17, Pin.OUT, value=1)
+    fram = FRAM(spi, [spi_cs0], size=64)
+    # Only need to run this once!
+    # os.VfsLfs2.mkfs(fram)
+    os.mount(fram, "/fram")
+    fram_settings = FRAMSettings("/fram/settings.cbor", supported_version)
+
+    version = fram_settings.get("version", supported_version)
+    liters_pumped = fram_settings.get("liters_pumped", 0.0)
+    pump_on_seconds = fram_settings.get("pump_on_seconds", 0.0)
 
     # Hook up the LCD on I2C0
     i2c = I2C(0, scl=Pin(7), sda=Pin(6))
-    i2c.scan()
+    # Only need to run this once to get the right addr
+    # i2c.scan()
+    lcd = LCDHandler(i2c, 0x27)
 
 pump_en = Pin(22, Pin.OUT, value=0)
 
@@ -142,6 +233,7 @@ pump_state = StateMachine()
 loop_counter = 0
 
 total_flow = 0.0
+instance_flow = 0.0
 
 while True:
     with flow_mutex:
@@ -149,6 +241,10 @@ while True:
         flow_count = 0
 
     flow = counter * flow_factor
+    instance_flow += flow
+    if version >= 2:
+        liters_pumped += flow
+        fram_settings.set("liters_pumped", liters_pumped)
 
     loop_counter += 1
 
@@ -177,7 +273,25 @@ while True:
         # The Keurig is getting full enough, we can stop now.
         pump_state.transition(PumpStates().STOP)
 
+    on_time = pump_state.get_on_time()
+    if on_time:
+        _log("Water pumped: %0.3fL" % instance_flow)
+        instance_flow = 0.0
+
+        if version >= 2:
+            pump_on_seconds += on_time
+            fram_settings.set("pump_on_seconds", pump_on_seconds)
+
     _log("%s: State: %s, Keurig Level: %0.2f, Source Level %0.2f, Flow: %0.3f" %
          (loop_counter, PumpStates(value=pump_state.state).name, keurig_level, source_level, flow))
+
+    if version >= 2:
+        display_vars.update({
+            "keurig_level": keurig_level,
+            "source_level": source_level,
+            "liters_pumped": int(liters_pumped),
+            "pump_on_seconds": int(pump_on_seconds),
+        })
+        update_lcd_display(lcd)
 
     time.sleep(1.0)

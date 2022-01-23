@@ -1,3 +1,4 @@
+import time
 from utils import _log
 
 
@@ -38,6 +39,14 @@ class PumpStates(object):
 class StateMachine(object):
     def __init__(self):
         self.state = PumpStates("IDLE")
+        self.start_time = 0.0
+        self.end_time = 0.0
+        self.pump_on_times = []
+
+    def get_on_time(self):
+        if not self.pump_on_times:
+            return 0.0
+        return self.pump_on_times.pop()
 
     def transition(self, to_state: PumpStates) -> PumpStates:
         if not isinstance(to_state, PumpStates):
@@ -69,6 +78,10 @@ class StateMachine(object):
     def _from_pump_to_stop(self) -> PumpStates:
         global pump_en
         pump_en.value(0)
+        self.end_time = time.time()
+        on_time = self.end_time - self.start_time
+        _log("Pump was on for %0.3fs" % on_time)
+        self.pump_on_times.append(on_time)
         return self.transition(PumpStates().IDLE)
 
     def _from_pump_to_no_water(self) -> PumpStates:
@@ -76,6 +89,7 @@ class StateMachine(object):
 
     def _from_idle_to_pump(self) -> PumpStates:
         global pump_en
+        self.start_time = time.time()
         pump_en.value(1)
         return PumpStates().PUMP
 

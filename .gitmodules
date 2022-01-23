@@ -7,3 +7,6 @@
 [submodule "firmware/external/eeprom"]
 	path = firmware/external/eeprom
 	url = https://github.com/Beirdo/micropython_eeprom.git
+[submodule "firmware/external/cbor"]
+	path = firmware/external/cbor
+	url = https://github.com/Beirdo/micropython-cbor.git
